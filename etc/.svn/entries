@@ -1,0 +1,41 @@
+8
+
+dir
+127720
+http://192.168.0.230/repos/new/dev/source/sysinstall/trunk/mfs/etc
+http://192.168.0.230/repos
+
+
+
+2012-10-09T01:46:34.140394Z
+127720
+niuminguo
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+6a6fafc6-8ad5-4017-94c7-852144717117
+
+functions
+file
+
+
+
+
+2012-09-24T18:06:19.000000Z
+0ddbd723839f764b67b19ffff7efa3f1
+2012-10-09T01:46:34.140394Z
+127720
+niuminguo
+has-props
+

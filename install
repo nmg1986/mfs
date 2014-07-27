@@ -1,0 +1,123 @@
+#!/bin/bash
+
+MFS_PKG="mfs-1.6.20-2.tar.gz"
+MFS_DIR="mfs-1.6.20-2"
+MFS_PREFIX="/usr/local/mfs"
+
+ZLIB_PKG="zlib-1.2.5.1.tar.gz"
+ZLIB_DIR="zlib-1.2.5.1"
+ZLIB_PREFIX="/usr/local/zlib"
+ZLIB_LIB="$ZLIB_PREFIX/lib"
+ZLIB_INCLUDE="$ZLIB_PREFIX/include"
+#ZLIB_PKG_CONFIG_PATH="$ZLIB_PREFIX/lib/pkgconfig"
+
+FUSE_PKG="fuse-2.8.6.tar.gz"
+FUSE_DIR="fuse-2.8.6"
+FUSE_PREFIX="/usr/local/fuse"
+FUSE_PKG_CONFIG_PATH="$FUSE_PREFIX/lib/pkgconfig"
+
+UTIL_PKG="util-linux-ng-2.18.tar.bz2"
+UTIL_DIR="util-linux-ng-2.18"
+UTIL_PREFIX="/usr/local/util-linux-ng"
+MOUNT=`which mount`
+MOUNT_NAME=$(basename $MOUNT)
+MOUNT_DIR=$(dirname $MOUNT)
+UMOUNT=`which umount`
+UMOUNT_NAME=$(basename $UMOUNT)
+UMOUNT_DIR=$(dirname $UMOUNT)
+
+CONFIG_OPTIONS="--prefix=$MFS_PREFIX --with-default-user=mfs --with-default-group=mfs --sysconfdir=/etc/mfs --localstatedir=/var/lib"
+
+source etc/functions
+
+base_dir=$(pwd)
+
+Install_Zlib()
+{
+	ECHO "Install Zlib"
+	tar -xzf src/$ZLIB_PKG -C src 
+	cd src/$ZLIB_DIR
+	./configure --prefix=$ZLIB_PREFIX >/dev/null 2>&1
+	make > /dev/null 2>&1
+	make install > /dev/null 2>&1
+	cd $base_dir
+	rm -rf src/$ZLIB_DIR
+	OHCE "Done"
+}
+
+Install_Fuse()
+{
+	ECHO "Install Fuse"
+	tar -xzf src/$FUSE_PKG -C src	
+	cd src/$FUSE_DIR
+	./configure --prefix=$FUSE_PREFIX >/dev/null 2>&1
+	make  >/dev/null 2>&1
+	make install >/dev/null 2>&1
+	cd $base_dir
+	rm -rf src/$FUSE_DIR
+	OHCE "Done"
+}
+
+Install_Util_NG()
+{
+	ECHO "Install UNG"
+	tar -xjf src/$UTIL_PKG -C src
+	cd src/$UTIL_DIR
+	./configure --prefix=$UTIL_PREFIX > /dev/null 2>&1	
+	make > /dev/null 2>&1
+	make install > /dev/null 2>&1
+	mv $MOUNT $MOUNT_DIR/${MOUNT_NAME}.bak >/dev/null 2>&1
+	mv $UMOUNT $UMOUNT_DIR/${UMOUNT_NAME}.bak >/dev/null 2>&1
+	ln -s $UTIL_PREFIX/bin/mount $MOUNT_DIR  > /dev/null 2>&1
+	ln -s $UTIL_PREFIX/bin/umount $UMOUNT_DIR > /dev/null 2>&1
+	cd $base_dir
+	rm -rf src/$UTIL_DIR
+	OHCE "Done"
+}
+	
+
+
+Install_MFS()
+{
+	ECHO "Install MFS"
+	groupadd mfs > /dev/null 2>&1	
+	useradd -s /bin/nologin -g mfs mfs > /dev/null 2>&1
+	tar -xzf src/$MFS_PKG -C src 
+	cd src/$MFS_DIR
+        LDFLAGS="-L$ZLIB_LIB" CPPFLAGS="-I$ZLIB_INCLUDE" PKG_CONFIG_PATH="$FUSE_PKG_CONFIG_PATH" ./configure $CONFIG_OPTIONS  >/dev/null 2>&1
+        #PKG_CONFIG_PATH="$ZLIB_PKG_CONFIG_PATH:$FUSE_PKG_CONFIG_PATH" ./configure $CONFIG_OPTIONS
+	make >/dev/null 2>&1
+	make install >/dev/null 2>&1
+	cd $base_dir
+	rm -rf src/$MFS_DIR
+	install etc/mfsmaster.cfg        /etc/mfs
+	mv /var/lib/mfs/{metadata.mfs.empty,metadata.mfs} 
+	install etc/mfsexports.cfg       /etc/mfs
+	install etc/mfschunkserver.cfg   /etc/mfs
+	install etc/mfshdd.cfg           /etc/mfs
+	install etc/mfsmetalogger.cfg    /etc/mfs
+	install sbin/mfsmaster-init      /etc/init.d/mfsmaster
+	install sbin/mfschunkserver-init /etc/init.d/mfschunkserver
+	install sbin/mfsmetalogger-init  /etc/init.d/mfsmetalogger
+	install sbin/mfsmount-init       /etc/init.d/mfsmount
+	ln -sf  /etc/init.d/mfsmaster      /usr/sbin/rcmfsmaster
+	ln -sf  /etc/init.d/mfschunkserver /usr/sbin/rcmfschunkserver
+	ln -sf  /etc/init.d/mfsmetalogger  /usr/sbin/rcmfsmetalogger
+	ln -sf  /etc/init.d/mfsmount       /usr/sbin/rcmfsmount
+	ln -sf  /usr/local/mfs/bin/mfsmount  /usr/sbin/mfsmount
+	OHCE "Done"
+	echo 
+}
+	
+	
+print_line
+print_green "INSTALL MFS START"
+print_line
+Install_Zlib	
+Install_Fuse
+Install_Util_NG
+Install_MFS
+print_line
+print_green "INSTALL MFS END"
+print_line
+
